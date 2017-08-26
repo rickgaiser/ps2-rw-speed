@@ -9,6 +9,7 @@
 
 EE_BIN = rw_speed.elf
 EE_OBJS = main.o
+EE_LIBS = -lfileXio
 
 all: $(EE_OBJS_DIR) $(EE_BIN)
 

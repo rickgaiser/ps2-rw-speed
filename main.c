@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <kernel.h>
 #include <sifrpc.h>
+#include <fileXio_rpc.h>
 #include <loadfile.h>
 #include <time.h>
 
@@ -80,22 +81,57 @@ int main()
     printf("Read/Write speed test\n");
     printf("---------------------\n");
 
+	/*
+	 * Load IO modules
+	 */
+	if (SifLoadModule("host:iomanX.irx", 0, NULL) < 0)
+		printf("Could not load 'host:iomanX.irx'\n");
+
+	if (SifLoadModule("host:fileXio.irx", 0, NULL) < 0)
+		printf("Could not load 'host:fileXio.irx'\n");
+
+	/*
+	 * Load USB modules
+	 */
 	if (SifLoadModule("host:usbd.irx", 0, NULL) < 0)
-		printf("Could not find 'host:usbd.irx'\n");
+		printf("Could not load 'host:usbd.irx'\n");
 
 	if (SifLoadModule("host:usbhdfsd.irx", 0, NULL) < 0)
-		printf("Could not find 'host:usbhdfsd.irx'\n");
+		printf("Could not load 'host:usbhdfsd.irx'\n");
 
+	/*
+	 * Load IEEE1394 modules
+	 */
 	if (SifLoadModule("host:iLinkman.irx", 0, NULL) < 0)
-		printf("Could not find 'host:iLinkman.irx'\n");
+		printf("Could not load 'host:iLinkman.irx'\n");
 
 	if (SifLoadModule("host:IEEE1394_disk.irx", 0, NULL) < 0)
-		printf("Could not find 'host:IEEE1394_disk.irx'\n");
+		printf("Could not load 'host:IEEE1394_disk.irx'\n");
+
+	/*
+	 * Load HDD modules
+	 */
+	//if (SifLoadModule("host:ps2dev9.irx", 0, NULL) < 0)
+	//	printf("Could not load 'host:ps2dev9.irx'\n");
+
+	if (SifLoadModule("host:ps2atad.irx", 0, NULL) < 0)
+		printf("Could not load 'host:ps2atad.irx'\n");
+
+	if (SifLoadModule("host:ps2hdd.irx", 0, NULL) < 0)
+		printf("Could not load 'host:ps2hdd.irx'\n");
+
+	if (SifLoadModule("host:ps2fs.irx", 0, NULL) < 0)
+		printf("Could not load 'host:ps2fs.irx'\n");
 
 	delay(5); // some delay is required by usb mass storage driver
 
-	read_test("mass:zero.bin");
-	read_test("sd:zero.bin");
+	fileXioInit();
+	if (fileXioMount("pfs0:", "hdd0:__system", FIO_MT_RDWR) == -ENOENT)
+            printf("Could not mount 'hdd0:__system'\n");
+
+	read_test("mass:zero.bin");  // Place 'zero.bin' inside fat32 partition of USB stick
+	read_test("sd:zero.bin");    // Place 'zero.bin' inside fat32 partition of IEEE1394 drive
+	read_test("pfs0:zero.bin");  // Place 'zero.bin' inside __system partition of internal HDD (use uLE)
 
 	return 0;
 }
