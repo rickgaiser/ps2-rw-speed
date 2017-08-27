@@ -1,26 +1,22 @@
-# _____     ___ ____     ___ ____
-#  ____|   |    ____|   |        | |____|
-# |     ___|   |____ ___|    ____| |    \    PS2DEV Open Source Project.
-#-----------------------------------------------------------------------
-# Copyright 2001-2004, ps2dev - http://www.ps2dev.org
-# Licenced under Academic Free License version 2.0
-# Review ps2sdk README & LICENSE files for further details.
-#
-
-EE_BIN = rw_speed.elf
-EE_OBJS = main.o
-EE_LIBS = -lfileXio
-
-all: $(EE_OBJS_DIR) $(EE_BIN)
-
-test: all
-	ps2client -h $(PS2_IP) execee host:$(EE_BIN)
-
-reset: clean
-	ps2client -h $(PS2_IP) reset
+all:
+	$(MAKE) -C iop all
+	$(MAKE) -C ee all
 
 clean:
-	rm -f -r $(EE_OBJS_DIR) $(EE_BIN)
+	$(MAKE) -C iop clean
+	$(MAKE) -C ee clean
 
-include $(PS2SDK)/samples/Makefile.pref
-include $(PS2SDK)/samples/Makefile.eeglobal
+copy:
+	cp /usr/local/ps2dev/ps2sdk/iop/irx/fileXio.irx .
+	cp /usr/local/ps2dev/ps2sdk/iop/irx/IEEE1394_disk.irx .
+	cp /usr/local/ps2dev/ps2sdk/iop/irx/iLinkman.irx .
+	cp /usr/local/ps2dev/ps2sdk/iop/irx/iomanX.irx .
+	cp /usr/local/ps2dev/ps2sdk/iop/irx/ps2atad.irx .
+	cp /usr/local/ps2dev/ps2sdk/iop/irx/ps2dev9.irx .
+	cp /usr/local/ps2dev/ps2sdk/iop/irx/ps2fs.irx .
+	cp /usr/local/ps2dev/ps2sdk/iop/irx/ps2hdd.irx .
+	cp /usr/local/ps2dev/ps2sdk/iop/irx/usbd.irx .
+	cp /usr/local/ps2dev/ps2sdk/iop/irx/usbhdfsd.irx .
+
+test: all
+	ps2client -h $(PS2_IP) execee host:ee/rw_speed.elf

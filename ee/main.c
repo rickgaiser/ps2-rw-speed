@@ -5,9 +5,10 @@
 #include <loadfile.h>
 #include <time.h>
 
+#include "config.h"
+
 
 #define CLOCKS_PER_MSEC (147456 / 256)
-#define BUF_SIZE (256*1024)
 
 
 //--------------------------------------------------------------
@@ -36,9 +37,10 @@ void read_test(const char * filename)
 		return;
 	}
 
-	fseek(fp,0,SEEK_END);
-	fd_size = ftell(fp);
-	fseek(fp,0,SEEK_SET);
+	//fseek(fp,0,SEEK_END);
+	//fd_size = ftell(fp);
+	fd_size = 16*1024*1024;
+	//fseek(fp,0,SEEK_SET);
 
 	buffer = malloc(BUF_SIZE);
 
@@ -78,27 +80,31 @@ void read_test(const char * filename)
 //--------------------------------------------------------------
 int main()
 {
-    printf("Read/Write speed test\n");
-    printf("---------------------\n");
+    printf("EE Read/Write speed test\n");
+    printf("------------------------\n");
 
 	/*
 	 * Load IO modules
 	 */
-	if (SifLoadModule("host:iomanX.irx", 0, NULL) < 0)
-		printf("Could not load 'host:iomanX.irx'\n");
+	//if (SifLoadModule("host:iomanX.irx", 0, NULL) < 0)
+	//	printf("Could not load 'host:iomanX.irx'\n");
 
-	if (SifLoadModule("host:fileXio.irx", 0, NULL) < 0)
-		printf("Could not load 'host:fileXio.irx'\n");
+	//if (SifLoadModule("host:fileXio.irx", 0, NULL) < 0)
+	//	printf("Could not load 'host:fileXio.irx'\n");
 
+#ifdef TEST_USB
 	/*
 	 * Load USB modules
 	 */
-	if (SifLoadModule("host:usbd.irx", 0, NULL) < 0)
+	//if (SifLoadModule("host:usbd.irx", 0, NULL) < 0)
+	if (SifLoadModule("host:USBD.IRX", 0, NULL) < 0)
 		printf("Could not load 'host:usbd.irx'\n");
 
 	if (SifLoadModule("host:usbhdfsd.irx", 0, NULL) < 0)
 		printf("Could not load 'host:usbhdfsd.irx'\n");
+#endif
 
+#ifdef TEST_IEEE
 	/*
 	 * Load IEEE1394 modules
 	 */
@@ -107,7 +113,9 @@ int main()
 
 	if (SifLoadModule("host:IEEE1394_disk.irx", 0, NULL) < 0)
 		printf("Could not load 'host:IEEE1394_disk.irx'\n");
+#endif
 
+#ifdef TEST_HDD
 	/*
 	 * Load HDD modules
 	 */
@@ -123,15 +131,28 @@ int main()
 	if (SifLoadModule("host:ps2fs.irx", 0, NULL) < 0)
 		printf("Could not load 'host:ps2fs.irx'\n");
 
-	delay(5); // some delay is required by usb mass storage driver
-
 	fileXioInit();
 	if (fileXioMount("pfs0:", "hdd0:__system", FIO_MT_RDWR) == -ENOENT)
             printf("Could not mount 'hdd0:__system'\n");
+#endif
 
+	delay(5); // some delay is required by usb mass storage driver
+
+#ifdef TEST_USB
 	read_test("mass:zero.bin");  // Place 'zero.bin' inside fat32 partition of USB stick
+#endif
+#ifdef TEST_IEEE
 	read_test("sd:zero.bin");    // Place 'zero.bin' inside fat32 partition of IEEE1394 drive
+#endif
+#ifdef TEST_HDD
 	read_test("pfs0:zero.bin");  // Place 'zero.bin' inside __system partition of internal HDD (use uLE)
+#endif
+
+	/*
+	 * Start read/write speed test on the IOP
+	 */
+	if (SifLoadModule("host:iop/rw_speed.irx", 0, NULL) < 0)
+		printf("Could not load 'host:iop/rw_speed.irx'\n");
 
 	return 0;
 }
