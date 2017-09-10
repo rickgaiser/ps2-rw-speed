@@ -86,22 +86,34 @@ int main()
 	/*
 	 * Load IO modules
 	 */
-	//if (SifLoadModule("host:iomanX.irx", 0, NULL) < 0)
-	//	printf("Could not load 'host:iomanX.irx'\n");
+	if (SifLoadModule("host:iomanX.irx", 0, NULL) < 0)
+		printf("Could not load 'host:iomanX.irx'\n");
 
-	//if (SifLoadModule("host:fileXio.irx", 0, NULL) < 0)
-	//	printf("Could not load 'host:fileXio.irx'\n");
+	if (SifLoadModule("host:fileXio.irx", 0, NULL) < 0)
+		printf("Could not load 'host:fileXio.irx'\n");
+
+#ifdef USE_BDM
+	if (SifLoadModule("host:bdm.irx", 0, NULL) < 0)
+		printf("Could not load 'host:bdm.irx'\n");
+	if (SifLoadModule("host:bdmfs_mbr.irx", 0, NULL) < 0)
+		printf("Could not load 'host:bdmfs_mbr.irx'\n");
+#endif
 
 #ifdef TEST_USB
 	/*
 	 * Load USB modules
 	 */
-	//if (SifLoadModule("host:usbd.irx", 0, NULL) < 0)
-	if (SifLoadModule("host:USBD.IRX", 0, NULL) < 0)
+	if (SifLoadModule("host:usbd.irx", 0, NULL) < 0)
+	//if (SifLoadModule("host:USBD.IRX", 0, NULL) < 0)
 		printf("Could not load 'host:usbd.irx'\n");
 
+#ifdef USE_BDM
+	if (SifLoadModule("host:usbmass_bd.irx", 0, NULL) < 0)
+		printf("Could not load 'host:usbmass_bd.irx'\n");
+#else
 	if (SifLoadModule("host:usbhdfsd.irx", 0, NULL) < 0)
 		printf("Could not load 'host:usbhdfsd.irx'\n");
+#endif
 #endif
 
 #ifdef TEST_IEEE
@@ -111,8 +123,21 @@ int main()
 	if (SifLoadModule("host:iLinkman.irx", 0, NULL) < 0)
 		printf("Could not load 'host:iLinkman.irx'\n");
 
+#ifdef USE_BDM
+	if (SifLoadModule("host:IEEE1394_bd.irx", 0, NULL) < 0)
+		printf("Could not load 'host:IEEE1394_bd.irx'\n");
+#else
 	if (SifLoadModule("host:IEEE1394_disk.irx", 0, NULL) < 0)
 		printf("Could not load 'host:IEEE1394_disk.irx'\n");
+#endif
+#endif
+
+	// Give low level drivers some time to init before starting the FS
+	delay(5);
+
+#ifdef USE_BDM
+	if (SifLoadModule("host:bdmfs_vfat.irx", 0, NULL) < 0)
+		printf("Could not load 'host:bdmfs_vfat.irx'\n");
 #endif
 
 #ifdef TEST_HDD
@@ -136,13 +161,11 @@ int main()
             printf("Could not mount 'hdd0:__system'\n");
 #endif
 
-	delay(5); // some delay is required by usb mass storage driver
-
 #ifdef TEST_USB
-	read_test("mass:zero.bin");  // Place 'zero.bin' inside fat32 partition of USB stick
+	//read_test("mass:zero.bin");  // Place 'zero.bin' inside fat32 partition of USB stick
 #endif
 #ifdef TEST_IEEE
-	read_test("sd:zero.bin");    // Place 'zero.bin' inside fat32 partition of IEEE1394 drive
+	//read_test("sd:zero.bin");    // Place 'zero.bin' inside fat32 partition of IEEE1394 drive
 #endif
 #ifdef TEST_HDD
 	read_test("pfs0:zero.bin");  // Place 'zero.bin' inside __system partition of internal HDD (use uLE)
