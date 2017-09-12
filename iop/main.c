@@ -13,7 +13,7 @@ IRX_ID(MODNAME, 1, 1);
 
 
 //--------------------------------------------------------------
-void read_test(const char * filename, unsigned int max_size)
+void read_test(const char * filename, unsigned int buf_size, unsigned int max_size)
 {
     int fd_size, size_left;
     unsigned int msec;
@@ -33,14 +33,12 @@ void read_test(const char * filename, unsigned int max_size)
 	fd_size = max_size;
 	//lseek(fd,0,SEEK_SET);
 
-	buffer = AllocSysMemory(ALLOC_FIRST, BUF_SIZE, NULL);
-
-	printf("Start reading file %s:\n", filename);
+	buffer = AllocSysMemory(ALLOC_FIRST, buf_size, NULL);
 
     GetSystemTime(&clk_start);
 	size_left = fd_size;
 	while (size_left > 0) {
-        int read_size = (size_left > BUF_SIZE) ? BUF_SIZE : size_left;
+        int read_size = (size_left > buf_size) ? buf_size : size_left;
         if (read(fd, buffer, read_size) != read_size) {
             printf("Failed to read file.\n");
             return;
@@ -56,19 +54,11 @@ void read_test(const char * filename, unsigned int max_size)
         msec -= (start_usecs - end_usecs) / 1000;
     else
         msec += (end_usecs - start_usecs) / 1000;
-	printf("Done! %dKiB in %dms\n", fd_size/1024, msec);
-	printf("Average speed: %dKB/s\n", fd_size / msec);
+	printf("Read %dKiB in %dms, buf_size=%d, speed=%dKB/s\n", fd_size/1024, msec, buf_size, fd_size / msec);
 
 	FreeSysMemory(buffer);
 
 	close(fd);
-}
-
-int sem;
-//--------------------------------------------------------------
-void read_test_bd_cb(void* arg)
-{
-	SignalSema(sem);
 }
 
 //--------------------------------------------------------------
@@ -110,19 +100,13 @@ void read_test_bd(struct block_device* bd, unsigned int sector_count, unsigned i
 #define MAX_BD 10
 int _start()
 {
-	iop_sema_t sema;
     struct block_device* bd[MAX_BD];
     unsigned int sector_count;
+    unsigned int buf_size;
     int i;
 
     printf("IOP Read/Write speed test\n");
     printf("-------------------------\n");
-
-	sema.attr = 0;
-	sema.option = 0;
-	sema.initial = 0;
-	sema.max = 1;
-	sem = CreateSema(&sema);
 
     // Get all block devices from BDM (Block Device Manager)
     bdm_get_bd(bd, MAX_BD);
@@ -130,29 +114,25 @@ int _start()
 	for (i = 0; i < MAX_BD; i++) {
 		if ((bd[i] != NULL) && (bd[i]->parNr == 0)) {
 			printf("Start reading '%s%dp%d' block device:\n", bd[i]->name, bd[i]->devNr, bd[i]->parNr);
-			for (sector_count = 4; sector_count <= (32*2); sector_count *= 2)
+			for (sector_count = 1; sector_count <= (512*2); sector_count *= 2)
 				read_test_bd(bd[i], sector_count, 4*1024*1024, 0);
-			for (sector_count = 4; sector_count <= (32*2); sector_count *= 2)
-				read_test_bd(bd[i], sector_count, 4*1024*1024, 2);
 		}
 	}
 
 	// Place 'zero.bin' inside fat32 partition of drive
-	read_test("mass0:zero.bin", 4*1024*1024);
-	read_test("mass0:zero.bin", 4*1024*1024);
-	read_test("mass0:zero.bin", 4*1024*1024);
-	read_test("mass0:zero.bin", 4*1024*1024);
+	printf("Start reading file %s:\n", "mass0:zero.bin");
+	for (buf_size = 512; buf_size <= (512*1024); buf_size *= 2)
+		read_test("mass0:zero.bin", buf_size, 4*1024*1024);
 
-	read_test("mass1:zero.bin", 4*1024*1024);
-	read_test("mass1:zero.bin", 4*1024*1024);
-	read_test("mass1:zero.bin", 4*1024*1024);
-	read_test("mass1:zero.bin", 4*1024*1024);
+	printf("Start reading file %s:\n", "mass1:zero.bin");
+	for (buf_size = 512; buf_size <= (512*1024); buf_size *= 2)
+		read_test("mass1:zero.bin", buf_size, 4*1024*1024);
 
 #ifdef TEST_HDD
-	read_test("pfs0:zero.bin", 16*1024*1024);  // Place 'zero.bin' inside __system partition of internal HDD (use uLE)
+	printf("Start reading file %s:\n", "pfs0:zero.bin");
+	for (buf_size = 512; buf_size <= (512*1024); buf_size *= 2)
+		read_test("pfs0:zero.bin", buf_size, 16*1024*1024);  // Place 'zero.bin' inside __system partition of internal HDD (use uLE)
 #endif
-
-	DeleteSema(sem);
 
 	return 1;
 }
