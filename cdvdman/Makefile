@@ -31,12 +31,12 @@ endif
 ifeq ($(USE_USB),1)
 IOP_BIN  = usb_cdvdman.irx
 IOP_OBJNAME = usb.
-IOP_OBJS += device-usb.o mass_driver.o blast.o
+IOP_OBJS += device-usb.o mass_driver.o
 ifeq ($(USE_DEV9),1)
 IOP_OBJS += dev9.o
 else
 ifeq ($(IOPCORE_DEBUG),1)
-IOP_OBJS += dev9.o
+#IOP_OBJS += dev9.o
 endif
 endif
 endif
@@ -73,7 +73,7 @@ endif
 
 ifeq ($(USE_HDPRO),1)
 ifeq ($(IOPCORE_DEBUG),1)
-IOP_OBJS += dev9.o
+#IOP_OBJS += dev9.o
 endif
 endif
 ifeq ($(USE_USB),1)
@@ -81,7 +81,7 @@ ifeq ($(USE_DEV9),1)
 IOP_CFLAGS += -D__USE_DEV9
 else
 ifeq ($(IOPCORE_DEBUG),1)
-IOP_CFLAGS += -D__USE_DEV9
+#IOP_CFLAGS += -D__USE_DEV9
 endif
 endif
 endif
@@ -102,4 +102,4 @@ clean:
 rebuild: clean all
 
 include $(PS2SDK)/Defs.make
-include Rules.make
+include ../Rules.make

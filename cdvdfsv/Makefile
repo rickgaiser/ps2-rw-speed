@@ -25,4 +25,4 @@ clean:
 	-rm -f *.o *.irx cdvdfsv.map
 
 include $(PS2SDK)/Defs.make
-include ../../Rules.make
+include ../Rules.make
