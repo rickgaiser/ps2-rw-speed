@@ -1,6 +1,6 @@
 EE_BIN = rw_speed.elf
 EE_OBJS = main.o
-EE_LIBS = -lfileXio
+EE_LIBS = -lfileXio -lcdvd
 
 all: $(EE_BIN)
 

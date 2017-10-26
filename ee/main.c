@@ -4,6 +4,7 @@
 #include <fileXio_rpc.h>
 #include <loadfile.h>
 #include <time.h>
+#include <libcdvd.h>
 
 #include "config.h"
 
@@ -24,13 +25,13 @@ void delay(int count)
 }
 
 //--------------------------------------------------------------
-void read_test(const char * filename)
+void read_test(const char * filename, unsigned int buf_size, unsigned int max_size)
 {
-    int fd_size, size_left, size_sec;
+    int fd_size, size_left;
     int msec;
     FILE *fp;
     char * buffer = NULL;
-    clock_t clk_start, clk_end, clk_sec;
+    clock_t clk_start, clk_end;
 
 	if ((fp = fopen(filename, "rb")) == NULL) {
 		printf("Could not find '%s'\n", filename);
@@ -39,38 +40,25 @@ void read_test(const char * filename)
 
 	//fseek(fp,0,SEEK_END);
 	//fd_size = ftell(fp);
-	fd_size = 16*1024*1024;
+	fd_size = max_size;
 	//fseek(fp,0,SEEK_SET);
 
-	buffer = malloc(BUF_SIZE);
+	buffer = malloc(buf_size);
 
-	printf("Start reading file %s:\n", filename);
-
-	clk_start = clk_end = clk_sec = clock();
+	clk_start = clock();
 	size_left = fd_size;
-	size_sec = 0;
 	while (size_left > 0) {
-        int read_size = (size_left > BUF_SIZE) ? BUF_SIZE : size_left;
+        int read_size = (size_left > buf_size) ? buf_size : size_left;
         if (fread(buffer, 1, read_size, fp) != read_size) {
             printf("Failed to read file.\n");
             return;
         }
         size_left -= read_size;
-        size_sec += read_size;
-        clk_end = clock();
-
-        msec = (int)((clk_end - clk_sec) / CLOCKS_PER_MSEC);
-        if (msec >= 1000) {
-            printf("Speed: %dKB/s\n", size_sec / msec);
-
-            clk_sec = clk_end;
-            size_sec = 0;
-        }
 	}
+    clk_end = clock();
 
-	printf("Done!\n");
 	msec = (int)((clk_end - clk_start) / CLOCKS_PER_MSEC);
-	printf("Average speed: %dKB/s\n", fd_size / msec);
+	printf("Read %dKiB in %dms, buf_size=%d, speed=%dKB/s\n", fd_size/1024, msec, buf_size, fd_size / msec);
 
 	free(buffer);
 
@@ -78,91 +66,145 @@ void read_test(const char * filename)
 }
 
 //--------------------------------------------------------------
+void test_cdvd()
+{
+	sceCdRMode mode = {1, 0, 0, 0};
+    char * buffer = NULL;
+
+	printf("Start reading CDVD\n");
+
+	if (sceCdInit(SCECdINIT) != 1)
+		printf("ERROR: sceCdInit(SCECdINIT)\n");
+
+	buffer = malloc(512*1024);
+
+	if (sceCdReadDVDV(0, 1, buffer, &mode) != 1)
+		printf("ERROR: sceCdReadDVDV\n");
+
+	if (sceCdSync(0) != 0)
+		printf("ERROR: sceCdSync\n");
+
+	free(buffer);
+
+	//if (sceCdInit(SCECdEXIT) != 1)
+	//	printf("ERROR: sceCdInit(SCECdEXIT)\n");
+}
+
+//--------------------------------------------------------------
 int main()
 {
+    unsigned int buf_size;
+
     printf("EE Read/Write speed test\n");
     printf("------------------------\n");
+
+	SifInitRpc(0);
 
 	/*
 	 * Load IO modules
 	 */
-	if (SifLoadModule("host:iomanX.irx", 0, NULL) < 0)
-		printf("Could not load 'host:iomanX.irx'\n");
+	if (SifLoadModule("host:modules/iomanX.irx", 0, NULL) < 0)
+		printf("Could not load 'host:modules/iomanX.irx'\n");
 
-	if (SifLoadModule("host:fileXio.irx", 0, NULL) < 0)
-		printf("Could not load 'host:fileXio.irx'\n");
+	if (SifLoadModule("host:modules/fileXio.irx", 0, NULL) < 0)
+		printf("Could not load 'host:modules/fileXio.irx'\n");
 
-#ifdef USE_BDM
-	if (SifLoadModule("host:bdm.irx", 0, NULL) < 0)
-		printf("Could not load 'host:bdm.irx'\n");
-	if (SifLoadModule("host:bdmfs_mbr.irx", 0, NULL) < 0)
-		printf("Could not load 'host:bdmfs_mbr.irx'\n");
-#endif
+	if (SifLoadModule("host:modules/usbd.irx", 0, NULL) < 0)
+		printf("Could not load 'host:modules/usbd.irx'\n");
+
+	if (SifLoadModule("host:modules/iLinkman.irx", 0, NULL) < 0)
+		printf("Could not load 'host:modules/iLinkman.irx'\n");
 
 #ifdef TEST_USB
-	/*
-	 * Load USB modules
-	 */
-	if (SifLoadModule("host:usbd.irx", 0, NULL) < 0)
-	//if (SifLoadModule("host:USBD.IRX", 0, NULL) < 0)
-		printf("Could not load 'host:usbd.irx'\n");
-
 #ifdef USE_BDM
-	if (SifLoadModule("host:usbmass_bd.irx", 0, NULL) < 0)
-		printf("Could not load 'host:usbmass_bd.irx'\n");
+	if (SifLoadModule("host:modules/bdm.irx", 0, NULL) < 0)
+		printf("Could not load 'host:modules/bdm.irx'\n");
+
+	if (SifLoadModule("host:modules/usbmass_bd.irx", 0, NULL) < 0)
+		printf("Could not load 'host:modules/usbmass_bd.irx'\n");
+
+	if (SifLoadModule("host:modules/bdmfs_vfat.irx", 0, NULL) < 0)
+		printf("Could not load 'host:modules/bdmfs_vfat.irx'\n");
 #else
-	if (SifLoadModule("host:usbhdfsd.irx", 0, NULL) < 0)
-		printf("Could not load 'host:usbhdfsd.irx'\n");
+	if (SifLoadModule("host:modules/usbhdfsd.irx", 0, NULL) < 0)
+		printf("Could not load 'host:modules/usbhdfsd.irx'\n");
 #endif
+#endif
+
+#ifdef TEST_SDC
+	if (SifLoadModule("host:modules/bdm.irx", 0, NULL) < 0)
+		printf("Could not load 'host:modules/bdm.irx'\n");
+
+	//if (SifLoadModule("host:modules/sio2man.irx", 0, NULL) < 0)
+	//	printf("Could not load 'host:modules/sio2man.irx'\n");
+
+	if (SifLoadModule("host:modules/sdCard.irx", 0, NULL) < 0)
+		printf("Could not load 'host:modules/sdCard.irx'\n");
+
+	if (SifLoadModule("host:modules/bdmfs_vfat.irx", 0, NULL) < 0)
+		printf("Could not load 'host:modules/bdmfs_vfat.irx'\n");
 #endif
 
 #ifdef TEST_IEEE
-	/*
-	 * Load IEEE1394 modules
-	 */
-	if (SifLoadModule("host:iLinkman.irx", 0, NULL) < 0)
-		printf("Could not load 'host:iLinkman.irx'\n");
-
 #ifdef USE_BDM
-	if (SifLoadModule("host:IEEE1394_bd.irx", 0, NULL) < 0)
-		printf("Could not load 'host:IEEE1394_bd.irx'\n");
+	if (SifLoadModule("host:modules/bdm.irx", 0, NULL) < 0)
+		printf("Could not load 'host:modules/bdm.irx'\n");
+
+	if (SifLoadModule("host:modules/IEEE1394_bd.irx", 0, NULL) < 0)
+		printf("Could not load 'host:modules/IEEE1394_bd.irx'\n");
+
+	if (SifLoadModule("host:modules/bdmfs_vfat.irx", 0, NULL) < 0)
+		printf("Could not load 'host:modules/bdmfs_vfat.irx'\n");
 #else
-	if (SifLoadModule("host:IEEE1394_disk.irx", 0, NULL) < 0)
-		printf("Could not load 'host:IEEE1394_disk.irx'\n");
+	if (SifLoadModule("host:modules/IEEE1394_disk.irx", 0, NULL) < 0)
+		printf("Could not load 'host:modules/IEEE1394_disk.irx'\n");
 #endif
 #endif
 
 	// Give low level drivers some time to init before starting the FS
 	delay(5);
 
-#ifdef USE_BDM
-	if (SifLoadModule("host:bdmfs_vfat.irx", 0, NULL) < 0)
-		printf("Could not load 'host:bdmfs_vfat.irx'\n");
-#endif
-
 #ifdef TEST_HDD
 	/*
 	 * Load HDD modules
 	 */
-	//if (SifLoadModule("host:ps2dev9.irx", 0, NULL) < 0)
-	//	printf("Could not load 'host:ps2dev9.irx'\n");
+	//if (SifLoadModule("host:modules/ps2dev9.irx", 0, NULL) < 0)
+	//	printf("Could not load 'host:modules/ps2dev9.irx'\n");
 
-	if (SifLoadModule("host:ps2atad.irx", 0, NULL) < 0)
-		printf("Could not load 'host:ps2atad.irx'\n");
+	if (SifLoadModule("host:modules/ps2atad.irx", 0, NULL) < 0)
+		printf("Could not load 'host:modules/ps2atad.irx'\n");
 
-	if (SifLoadModule("host:ps2hdd.irx", 0, NULL) < 0)
-		printf("Could not load 'host:ps2hdd.irx'\n");
+	if (SifLoadModule("host:modules/ps2hdd.irx", 0, NULL) < 0)
+		printf("Could not load 'host:modules/ps2hdd.irx'\n");
 
-	if (SifLoadModule("host:ps2fs.irx", 0, NULL) < 0)
-		printf("Could not load 'host:ps2fs.irx'\n");
+	if (SifLoadModule("host:modules/ps2fs.irx", 0, NULL) < 0)
+		printf("Could not load 'host:modules/ps2fs.irx'\n");
 
 	fileXioInit();
 	if (fileXioMount("pfs0:", "hdd0:__system", FIO_MT_RDWR) == -ENOENT)
             printf("Could not mount 'hdd0:__system'\n");
 #endif
 
+#ifdef TEST_USB_CDVD
+	if (SifLoadModule("host:cdvdman/cdvdman.irx", 0, NULL) < 0)
+		printf("Could not load 'host:cdvdman/cdvdman.irx'\n");
+
+	if (SifLoadModule("host:cdvdfsv/cdvdfsv.irx", 0, NULL) < 0)
+		printf("Could not load 'host:cdvdfsv/cdvdfsv.irx'\n");
+
+	if (SifLoadModule("host:modules/usbmass_bd.irx", 0, NULL) < 0)
+		printf("Could not load 'host:modules/usbmass_bd.irx'\n");
+
+	//if (SifLoadModule("host:modules/IEEE1394_bd.irx", 0, NULL) < 0)
+	//	printf("Could not load 'host:modules/IEEE1394_bd.irx'\n");
+#endif
+
+
 #ifdef TEST_USB
 	//read_test("mass:zero.bin");  // Place 'zero.bin' inside fat32 partition of USB stick
+#endif
+#ifdef TEST_SDC
+	//read_test("sdc:zero.bin");  // Place 'zero.bin' inside fat32 partition of SD card
 #endif
 #ifdef TEST_IEEE
 	//read_test("sd:zero.bin");    // Place 'zero.bin' inside fat32 partition of IEEE1394 drive
@@ -171,11 +213,22 @@ int main()
 	read_test("pfs0:zero.bin");  // Place 'zero.bin' inside __system partition of internal HDD (use uLE)
 #endif
 
+#ifdef TEST_USB_CDVD
+	for (buf_size = 512; buf_size <= (512*1024); buf_size *= 2)
+		read_test("cdrom:DATA/PZS3EU1.AFS", buf_size, 1*1024*1024);
+	//test_cdvd();
+#endif
+
+#ifdef TEST_ON_IOP
 	/*
 	 * Start read/write speed test on the IOP
 	 */
 	if (SifLoadModule("host:iop/rw_speed.irx", 0, NULL) < 0)
 		printf("Could not load 'host:iop/rw_speed.irx'\n");
+#endif
+
+	printf("Done, exit in 5\n");
+	delay(5);
 
 	return 0;
 }
