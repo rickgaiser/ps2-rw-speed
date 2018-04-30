@@ -5,12 +5,7 @@
 */
 
 #include "smsutils.h"
-#include "mass_common.h"
-#include "mass_stor.h"
-#include "dev9.h"
 #include "oplsmb.h"
-#include "smb.h"
-#include "atad.h"
 #include "ioplib_util.h"
 #include "cdvdman.h"
 #include "internal.h"
@@ -76,11 +71,11 @@ struct cdvdman_settings_usb cdvdman_settings = {
 #endif
 
 //----------------------------------------------------
-struct irx_export_table _exp_cdvdman;
-struct irx_export_table _exp_cdvdstm;
-struct irx_export_table _exp_smsutils;
+extern struct irx_export_table _exp_cdvdman;
+extern struct irx_export_table _exp_cdvdstm;
+extern struct irx_export_table _exp_smsutils;
 #ifdef VMC_DRIVER
-struct irx_export_table _exp_oplutils;
+extern struct irx_export_table _exp_oplutils;
 #endif
 
 struct dirTocEntry
@@ -232,7 +227,7 @@ static void fs_init(void)
     if (fs_inited)
         return;
 
-    DPRINTF("fs_init\n");
+    DPRINTF("%s\n", __func__);
 
     DeviceFSInit();
 
@@ -303,6 +298,8 @@ static void cdvdman_init(void)
 
 int sceCdInit(int init_mode)
 {
+    DPRINTF("%s\n", __func__);
+
     cdvdman_init();
     return 1;
 }
@@ -1810,6 +1807,27 @@ static inline void InstallIntrHandler(void)
 
 int _start(int argc, char **argv)
 {
+    DPRINTF("CDVDMAN\n");
+
+#ifdef SPEED_TESTING
+    /*
+     * Manually load an ISO when speed testing.
+     *
+     * You need to know the LBA of the iso
+     * on the block device you're testing.
+     */
+    cdvdman_settings.common.NumParts = 1;
+    cdvdman_settings.common.media = 0x14; // PS2DVD
+    cdvdman_settings.common.flags = 0;
+    cdvdman_settings.common.layer1_start = 0;
+    cdvdman_settings.common.DiscID[0] = '0';
+    cdvdman_settings.common.DiscID[1] = '1';
+    cdvdman_settings.common.DiscID[2] = '2';
+    cdvdman_settings.common.DiscID[3] = '3';
+    cdvdman_settings.common.DiscID[4] = '4';
+    cdvdman_settings.LBAs[0] = 390359;
+#endif
+
     // register exports
     RegisterLibraryEntries(&_exp_cdvdman);
     RegisterLibraryEntries(&_exp_cdvdstm);
@@ -1834,8 +1852,10 @@ int _start(int argc, char **argv)
     cdvdman_initdev();
     InstallIntrHandler();
 
+#ifndef SPEED_TESTING
     // hook MODLOAD's exports
     hookMODLOAD();
+#endif
 
     // init disk type stuff
     cdvdman_initDiskType();

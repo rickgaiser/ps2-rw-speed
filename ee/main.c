@@ -93,7 +93,9 @@ void test_cdvd()
 //--------------------------------------------------------------
 int main()
 {
+#ifdef TEST_USB_CDVD
     unsigned int buf_size;
+#endif
 
     printf("EE Read/Write speed test\n");
     printf("------------------------\n");
@@ -131,15 +133,15 @@ int main()
 #endif
 #endif
 
-#ifdef TEST_SDC
+#ifdef TEST_MC2SD
 	if (SifLoadModule("host:modules/bdm.irx", 0, NULL) < 0)
 		printf("Could not load 'host:modules/bdm.irx'\n");
 
 	//if (SifLoadModule("host:modules/sio2man.irx", 0, NULL) < 0)
 	//	printf("Could not load 'host:modules/sio2man.irx'\n");
 
-	if (SifLoadModule("host:modules/sdCard.irx", 0, NULL) < 0)
-		printf("Could not load 'host:modules/sdCard.irx'\n");
+	if (SifLoadModule("host:modules/mc2sd_bd.irx", 0, NULL) < 0)
+		printf("Could not load 'host:modules/mc2sd_bd.irx'\n");
 
 	if (SifLoadModule("host:modules/bdmfs_vfat.irx", 0, NULL) < 0)
 		printf("Could not load 'host:modules/bdmfs_vfat.irx'\n");
@@ -203,7 +205,7 @@ int main()
 #ifdef TEST_USB
 	//read_test("mass:zero.bin");  // Place 'zero.bin' inside fat32 partition of USB stick
 #endif
-#ifdef TEST_SDC
+#ifdef TEST_MC2SD
 	//read_test("sdc:zero.bin");  // Place 'zero.bin' inside fat32 partition of SD card
 #endif
 #ifdef TEST_IEEE

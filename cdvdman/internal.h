@@ -1,3 +1,11 @@
+#ifndef _INTERNAL_H_
+#define _INTERNAL_H_
+
+
+#include <types.h>
+#include <stdio.h>
+
+
 #ifdef __IOPCORE_DEBUG
 #define DPRINTF(args...) printf(args)
 #define iDPRINTF(args...) Kprintf(args)
@@ -5,6 +13,7 @@
 #define DPRINTF(args...)
 #define iDPRINTF(args...)
 #endif
+
 
 struct SteamingData
 {
@@ -37,3 +46,6 @@ typedef void (*StmCallback_t)(void);
 //Internal (common) function prototypes
 void SetStm0Callback(StmCallback_t callback);
 int cdvdman_AsyncRead(u32 lsn, u32 sectors, void *buf);
+
+
+#endif

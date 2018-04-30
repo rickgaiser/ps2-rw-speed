@@ -33,13 +33,11 @@ static char *lm_modulefake_list[] = {
 #ifdef USB_DRIVER
     "USBD.IRX",
     "CDVDSTM.IRX",
-    NULL
 #endif
 #ifdef SMB_DRIVER
     "DEV9.IRX",
     "SMAP.IRX",
     "CDVDSTM.IRX",
-    NULL
 #endif
 #ifdef HDD_DRIVER
     "ATAD.IRX",
@@ -51,21 +49,19 @@ static char *lm_modulefake_list[] = {
     "DEV9.IRX",
 #endif
     "CDVDSTM.IRX",
-    NULL
 #endif
+    NULL
 };
 
 static char *lmb_modulefake_list[] = {
 #ifdef USB_DRIVER
     "USB_driver",
     "cdvd_st_driver",
-    NULL
 #endif
 #ifdef SMB_DRIVER
     "dev9",
     "INET_SMAP_driver",
     "cdvd_st_driver",
-    NULL
 #endif
 #ifdef HDD_DRIVER
     "atad_driver",
@@ -77,8 +73,8 @@ static char *lmb_modulefake_list[] = {
     "dev9",
 #endif
     "cdvd_st_driver",
-    NULL
 #endif
+    NULL
 };
 
 static int fakemod_flag = 0;

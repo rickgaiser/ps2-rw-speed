@@ -53,7 +53,7 @@ DECLARE_EXPORT_TABLE(cdvdman, 1, 1)
 	DECLARE_EXPORT(sceCdReadCdda)
 	DECLARE_EXPORT(_dummy)
 	DECLARE_EXPORT(_dummy)
-	DECLARE_EXPORT(_dummy)	
+	DECLARE_EXPORT(_dummy)
 	DECLARE_EXPORT(sceCdGetReadPos)
 	DECLARE_EXPORT(_dummy)
 	DECLARE_EXPORT(_dummy)
@@ -135,6 +135,21 @@ DECLARE_EXPORT_TABLE(cdvdstm, 1, 1)
 	DECLARE_EXPORT(_retonly)
 	DECLARE_EXPORT(_retonly)
 END_EXPORT_TABLE
+
+#ifdef USB_DRIVER
+DECLARE_EXPORT_TABLE(bdm, 1, 1)
+	DECLARE_EXPORT(_start)
+	DECLARE_EXPORT(_retonly)
+	DECLARE_EXPORT(_retonly)
+	DECLARE_EXPORT(_retonly)
+	DECLARE_EXPORT(bdm_connect_bd)
+	DECLARE_EXPORT(bdm_disconnect_bd)
+//	DECLARE_EXPORT(bdm_connect_fs)
+//	DECLARE_EXPORT(bdm_disconnect_fs)
+//	DECLARE_EXPORT(bdm_get_bd)
+//	DECLARE_EXPORT(bdm_RegisterCallback)
+END_EXPORT_TABLE
+#endif
 
 #ifdef SMB_DRIVER
 // dev9 export table

@@ -235,6 +235,8 @@ int _start(int argc, char *argv[])
 {
     iop_thread_t thread_param;
 
+    DPRINTF("CDVDFSV\n");
+
     RegisterLibraryEntries(&_exp_cdvdfsv);
 
     thread_param.attr = TH_C;
@@ -251,6 +253,8 @@ int _start(int argc, char *argv[])
 //-------------------------------------------------------------------------
 static void init_thread(void *args)
 {
+    DPRINTF("%s\n", __func__);
+
     sceSifInitRpc(0);
 
     cdvdfsv_buf = sceGetFsvRbuf();
@@ -336,6 +340,8 @@ static void cdvdfsv_rpc2_th(void *args)
 //-------------------------------------------------------------------------
 static void *cbrpc_cdinit(int fno, void *buf, int size)
 { // CD Init RPC callback
+    DPRINTF("%s\n", __func__);
+
     cdvdinit_res_t *r = (cdvdinit_res_t *)buf;
 
     r->func_ret = sceCdInit(*(int *)buf);
