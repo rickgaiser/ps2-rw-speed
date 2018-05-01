@@ -108,7 +108,7 @@ int _start()
     printf("IOP Read/Write speed test\n");
     printf("-------------------------\n");
 
-#ifdef USE_BDM
+#ifdef LOAD_BDM
     // Get all block devices from BDM (Block Device Manager)
     bdm_get_bd(bd, MAX_BD);
 	// Test them all (only partition 0 == entire device)
@@ -119,18 +119,14 @@ int _start()
 				read_test_bd(bd[i], sector_count, 4*1024*1024, 0);
 		}
 	}
-#endif
 
 	// Place 'zero.bin' inside fat32 partition of drive
 	printf("Start reading file %s:\n", "mass0:zero.bin");
 	for (buf_size = 128; buf_size <= (512*1024); buf_size *= 2)
 		read_test("mass0:zero.bin", buf_size, 1*1024*1024);
+#endif
 
-	printf("Start reading file %s:\n", "mass1:zero.bin");
-	for (buf_size = 128; buf_size <= (512*1024); buf_size *= 2)
-		read_test("mass1:zero.bin", buf_size, 1*1024*1024);
-
-#ifdef TEST_HDD
+#ifdef LOAD_PFS
 	printf("Start reading file %s:\n", "pfs0:zero.bin");
 	for (buf_size = 128; buf_size <= (512*1024); buf_size *= 2)
 		read_test("pfs0:zero.bin", buf_size, 8*1024*1024);  // Place 'zero.bin' inside __system partition of internal HDD (use uLE)

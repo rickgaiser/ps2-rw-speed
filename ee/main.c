@@ -12,8 +12,8 @@
 
 #define CLOCKS_PER_MSEC (147456 / 256)
 
-//#define PRINTF printf
-#define PRINTF scr_printf
+#define PRINTF printf
+//#define PRINTF scr_printf
 
 
 //--------------------------------------------------------------
@@ -97,7 +97,7 @@ void test_cdvd()
 //--------------------------------------------------------------
 int main()
 {
-#ifdef TEST_USB_CDVD
+#ifdef TEST_ON_EE
     unsigned int buf_size;
 #endif
 
@@ -115,71 +115,57 @@ int main()
 	if (SifLoadModule("host:modules/fileXio.irx", 0, NULL) < 0)
 		PRINTF("Could not load 'host:modules/fileXio.irx'\n");
 
+#ifdef LOAD_BDM
+	if (SifLoadModule("host:modules/bdm.irx", 0, NULL) < 0)
+		PRINTF("Could not load 'host:modules/bdm.irx'\n");
+#endif
+
+#ifdef LOAD_BDM_CDVD
+	if (SifLoadModule("host:cdvdman/cdvdman.irx", 0, NULL) < 0)
+		PRINTF("Could not load 'host:cdvdman/cdvdman.irx'\n");
+
+	if (SifLoadModule("host:cdvdfsv/cdvdfsv.irx", 0, NULL) < 0)
+		PRINTF("Could not load 'host:cdvdfsv/cdvdfsv.irx'\n");
+#endif
+
+#ifdef LOAD_BD_USB
 	if (SifLoadModule("host:modules/usbd.irx", 0, NULL) < 0)
 		PRINTF("Could not load 'host:modules/usbd.irx'\n");
 
-	if (SifLoadModule("host:modules/iLinkman.irx", 0, NULL) < 0)
-		PRINTF("Could not load 'host:modules/iLinkman.irx'\n");
-
-#ifdef TEST_USB
-#ifdef USE_BDM
-	if (SifLoadModule("host:modules/bdm.irx", 0, NULL) < 0)
-		PRINTF("Could not load 'host:modules/bdm.irx'\n");
-
 	if (SifLoadModule("host:modules/usbmass_bd.irx", 0, NULL) < 0)
 		PRINTF("Could not load 'host:modules/usbmass_bd.irx'\n");
-
-	if (SifLoadModule("host:modules/bdmfs_vfat.irx", 0, NULL) < 0)
-		PRINTF("Could not load 'host:modules/bdmfs_vfat.irx'\n");
-
-	if (SifLoadModule("host:modules/bdmfs_ext2.irx", 0, NULL) < 0)
-		PRINTF("Could not load 'host:modules/bdmfs_ext2.irx'\n");
-#else
-	if (SifLoadModule("host:modules/usbhdfsd.irx", 0, NULL) < 0)
-		PRINTF("Could not load 'host:modules/usbhdfsd.irx'\n");
-#endif
 #endif
 
-#ifdef TEST_MC2SD
-	if (SifLoadModule("host:modules/bdm.irx", 0, NULL) < 0)
-		PRINTF("Could not load 'host:modules/bdm.irx'\n");
-
+#ifdef LOAD_BD_MC2SD
 	//if (SifLoadModule("host:modules/sio2man.irx", 0, NULL) < 0)
 	//	PRINTF("Could not load 'host:modules/sio2man.irx'\n");
 
 	if (SifLoadModule("host:modules/mc2sd_bd.irx", 0, NULL) < 0)
 		PRINTF("Could not load 'host:modules/mc2sd_bd.irx'\n");
-
-	if (SifLoadModule("host:modules/bdmfs_vfat.irx", 0, NULL) < 0)
-		PRINTF("Could not load 'host:modules/bdmfs_vfat.irx'\n");
-
-	if (SifLoadModule("host:modules/bdmfs_ext2.irx", 0, NULL) < 0)
-		PRINTF("Could not load 'host:modules/bdmfs_ext2.irx'\n");
 #endif
 
-#ifdef TEST_IEEE
-#ifdef USE_BDM
-	if (SifLoadModule("host:modules/bdm.irx", 0, NULL) < 0)
-		PRINTF("Could not load 'host:modules/bdm.irx'\n");
+#ifdef LOAD_BD_IEEE
+	if (SifLoadModule("host:modules/iLinkman.irx", 0, NULL) < 0)
+		PRINTF("Could not load 'host:modules/iLinkman.irx'\n");
 
 	if (SifLoadModule("host:modules/IEEE1394_bd.irx", 0, NULL) < 0)
 		PRINTF("Could not load 'host:modules/IEEE1394_bd.irx'\n");
+#endif
 
+#ifdef LOAD_FS_VFAT
 	if (SifLoadModule("host:modules/bdmfs_vfat.irx", 0, NULL) < 0)
 		PRINTF("Could not load 'host:modules/bdmfs_vfat.irx'\n");
+#endif
 
+#ifdef LOAD_FS_EXT2
 	if (SifLoadModule("host:modules/bdmfs_ext2.irx", 0, NULL) < 0)
 		PRINTF("Could not load 'host:modules/bdmfs_ext2.irx'\n");
-#else
-	if (SifLoadModule("host:modules/IEEE1394_disk.irx", 0, NULL) < 0)
-		PRINTF("Could not load 'host:modules/IEEE1394_disk.irx'\n");
-#endif
 #endif
 
-	// Give low level drivers some time to init before starting the FS
+	// Give low level drivers some time to init
 	delay(5);
 
-#ifdef TEST_HDD
+#ifdef LOAD_PFS
 	/*
 	 * Load HDD modules
 	 */
@@ -200,38 +186,23 @@ int main()
             PRINTF("Could not mount 'hdd0:__system'\n");
 #endif
 
-#ifdef TEST_USB_CDVD
-	if (SifLoadModule("host:cdvdman/cdvdman.irx", 0, NULL) < 0)
-		PRINTF("Could not load 'host:cdvdman/cdvdman.irx'\n");
-
-	if (SifLoadModule("host:cdvdfsv/cdvdfsv.irx", 0, NULL) < 0)
-		PRINTF("Could not load 'host:cdvdfsv/cdvdfsv.irx'\n");
-
-	if (SifLoadModule("host:modules/usbmass_bd.irx", 0, NULL) < 0)
-		PRINTF("Could not load 'host:modules/usbmass_bd.irx'\n");
-
-	//if (SifLoadModule("host:modules/IEEE1394_bd.irx", 0, NULL) < 0)
-	//	PRINTF("Could not load 'host:modules/IEEE1394_bd.irx'\n");
+#ifdef TEST_ON_EE
+	/*
+	 * Start read/write speed test on the EE
+	 */
+#ifdef LOAD_BDM
+	for (buf_size = 512; buf_size <= (512*1024); buf_size *= 2)
+        read_test("mass:zero.bin", buf_size, 1*1024*1024);  // Place 'zero.bin' in the root
 #endif
-
-
-#ifdef TEST_USB
-	//read_test("mass:zero.bin");  // Place 'zero.bin' inside fat32 partition of USB stick
-#endif
-#ifdef TEST_MC2SD
-	//read_test("sdc:zero.bin");  // Place 'zero.bin' inside fat32 partition of SD card
-#endif
-#ifdef TEST_IEEE
-	//read_test("sd:zero.bin");    // Place 'zero.bin' inside fat32 partition of IEEE1394 drive
-#endif
-#ifdef TEST_HDD
-	read_test("pfs0:zero.bin");  // Place 'zero.bin' inside __system partition of internal HDD (use uLE)
-#endif
-
-#ifdef TEST_USB_CDVD
+#ifdef LOAD_BDM_CDVD
 	for (buf_size = 512; buf_size <= (512*1024); buf_size *= 2)
 		read_test("cdrom:DATA/PZS3EU1.AFS", buf_size, 1*1024*1024);
 	//test_cdvd();
+#endif
+#ifdef LOAD_PFS
+	for (buf_size = 512; buf_size <= (512*1024); buf_size *= 2)
+        read_test("pfs0:zero.bin", buf_size, 1*1024*1024);  // Place 'zero.bin' inside __system partition of internal HDD (use uLE)
+#endif
 #endif
 
 #ifdef TEST_ON_IOP
