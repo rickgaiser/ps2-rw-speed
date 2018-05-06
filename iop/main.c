@@ -1,4 +1,4 @@
-#include <iomanX.h>
+#include <ioman.h>
 #include <stdio.h>
 #include <sysmem.h>
 #include <thbase.h>
@@ -23,7 +23,7 @@ void read_test(const char * filename, unsigned int buf_size, unsigned int max_si
     u32 start_seconds, start_usecs;
     u32 end_seconds, end_usecs;
 
-	if ((fd = open(filename, O_RDONLY, 0644)) <= 0) {
+	if ((fd = open(filename, O_RDONLY/*, 0644*/)) <= 0) {
 		printf("Could not find '%s'\n", filename);
 		return;
 	}
@@ -116,20 +116,19 @@ int _start()
 		if ((bd[i] != NULL) && (bd[i]->parNr == 0)) {
 			printf("Start reading '%s%dp%d' block device:\n", bd[i]->name, bd[i]->devNr, bd[i]->parNr);
 			for (sector_count = 1; sector_count <= (512*2); sector_count *= 2)
-				read_test_bd(bd[i], sector_count, 4*1024*1024, 0);
+				read_test_bd(bd[i], sector_count, READ_SIZE, 0);
 		}
 	}
 
-	// Place 'zero.bin' inside fat32 partition of drive
-	printf("Start reading file %s:\n", "mass0:zero.bin");
-	for (buf_size = 128; buf_size <= (512*1024); buf_size *= 2)
-		read_test("mass0:zero.bin", buf_size, 1*1024*1024);
+	printf("Start reading file %s:\n", MASS_FILE_NAME);
+	for (buf_size = BLOCK_SIZE_MIN; buf_size <= BLOCK_SIZE_MAX; buf_size *= 2)
+		read_test(MASS_FILE_NAME, buf_size, READ_SIZE);
 #endif
 
 #ifdef LOAD_PFS
 	printf("Start reading file %s:\n", "pfs0:zero.bin");
-	for (buf_size = 128; buf_size <= (512*1024); buf_size *= 2)
-		read_test("pfs0:zero.bin", buf_size, 8*1024*1024);  // Place 'zero.bin' inside __system partition of internal HDD (use uLE)
+	for (buf_size = BLOCK_SIZE_MIN; buf_size <= BLOCK_SIZE_MAX; buf_size *= 2)
+		read_test("pfs0:zero.bin", buf_size, READ_SIZE);  // Place 'zero.bin' inside __system partition of internal HDD (use uLE)
 #endif
 
 	return 1;
