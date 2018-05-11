@@ -176,17 +176,32 @@ int main()
     PRINTF("LBA = %d\n", LBA);
     fileXioClose(fd);
 
+	printf("Start reading file %s:\n", MASS_FILE_NAME);
 	for (buf_size = BLOCK_SIZE_MIN; buf_size <= BLOCK_SIZE_MAX; buf_size *= 2)
         read_test(MASS_FILE_NAME, buf_size, READ_SIZE);
 #endif
 #ifdef LOAD_BDM_CDVD
+	printf("Start reading file %s:\n", CDVD_FILE_NAME);
 	for (buf_size = BLOCK_SIZE_MIN; buf_size <= BLOCK_SIZE_MAX; buf_size *= 2)
-		read_test("cdrom:DATA/PZS3EU1.AFS", buf_size, READ_SIZE);
+		read_test(CDVD_FILE_NAME, buf_size, READ_SIZE);
 	//test_cdvd();
 #endif
 #ifdef LOAD_PFS
+	printf("Start reading file %s:\n", PFS_FILE_NAME);
 	for (buf_size = BLOCK_SIZE_MIN; buf_size <= BLOCK_SIZE_MAX; buf_size *= 2)
-        read_test("pfs0:zero.bin", buf_size, READ_SIZE);  // Place 'zero.bin' inside __system partition of internal HDD (use uLE)
+        read_test(PFS_FILE_NAME, buf_size, READ_SIZE);
+#endif
+#ifdef LOAD_HOST
+    // Below a block size of 2K the speed is terrible:
+    //  512 -> speed is   4KiB/s
+    // 1024 -> speed is   8KiB/s
+    // 2048 -> speed is 700KiB/s
+    // ... weird
+    buf_size = (BLOCK_SIZE_MIN > 2048) ? BLOCK_SIZE_MIN : 2048;
+
+	printf("Start reading file %s:\n", HOST_FILE_NAME);
+	for (; buf_size <= BLOCK_SIZE_MAX; buf_size *= 2)
+        read_test(HOST_FILE_NAME, buf_size, READ_SIZE);
 #endif
 #endif
 

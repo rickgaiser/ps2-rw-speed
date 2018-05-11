@@ -7,6 +7,9 @@
 #define BLOCK_SIZE_MAX (32*1024)
 //#define MASS_FILE_NAME "mass:zero.bin"
 #define MASS_FILE_NAME "mass:DVD/SLES_549.45.DragonBall Z Budokai Tenkaichi 3.iso"
+#define CDVD_FILE_NAME "cdrom:DATA/PZS3EU1.AFS"
+#define HOST_FILE_NAME "host:zero.bin"
+#define PFS_FILE_NAME  "pfs0:zero.bin" // Place 'zero.bin' inside __system partition of internal HDD (use uLE)
 
 // Load one of these Block Disk Managers
 #define LOAD_BDM
@@ -23,6 +26,7 @@
 
 // Other file systems
 //#define LOAD_PFS
+#define LOAD_HOST
 
 // Where to run the tests
 #define TEST_ON_EE

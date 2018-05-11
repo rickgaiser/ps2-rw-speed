@@ -62,7 +62,7 @@ void read_test(const char * filename, unsigned int buf_size, unsigned int max_si
 }
 
 //--------------------------------------------------------------
-void read_test_bd(struct block_device* bd, unsigned int sector_count, unsigned int size, unsigned int delay_ms)
+void read_test_bd(struct block_device* bd, unsigned int sector_count, unsigned int size)
 {
     int fd_size = 0;
     unsigned int msec;
@@ -77,10 +77,6 @@ void read_test_bd(struct block_device* bd, unsigned int sector_count, unsigned i
     GetSystemTime(&clk_start);
     for (sector = 0; sector < (size / bd->sectorSize); sector += sector_count) {
         fd_size += bd->read(bd, sector, buffer, sector_count) * bd->sectorSize;
-
-        // Do something else
-		if (delay_ms > 0)
-			DelayThread(delay_ms * 1000);
     }
     GetSystemTime(&clk_end);
 
@@ -91,7 +87,7 @@ void read_test_bd(struct block_device* bd, unsigned int sector_count, unsigned i
         msec -= (start_usecs - end_usecs) / 1000;
     else
         msec += (end_usecs - start_usecs) / 1000;
-	printf("Read %dKiB in %dms, blocksize=%d, delay=%dms, speed=%dKB/s\n", fd_size/1024, msec, bd->sectorSize*sector_count, delay_ms, fd_size / msec);
+	printf("Read %dKiB in %dms, blocksize=%d, speed=%dKB/s\n", fd_size/1024, msec, bd->sectorSize*sector_count, fd_size / msec);
 
 	FreeSysMemory(buffer);
 }
@@ -116,19 +112,38 @@ int _start()
 		if ((bd[i] != NULL) && (bd[i]->parNr == 0)) {
 			printf("Start reading '%s%dp%d' block device:\n", bd[i]->name, bd[i]->devNr, bd[i]->parNr);
 			for (sector_count = 1; sector_count <= (512*2); sector_count *= 2)
-				read_test_bd(bd[i], sector_count, READ_SIZE, 0);
+				read_test_bd(bd[i], sector_count, READ_SIZE);
 		}
 	}
-
-	printf("Start reading file %s:\n", MASS_FILE_NAME);
-	for (buf_size = BLOCK_SIZE_MIN; buf_size <= BLOCK_SIZE_MAX; buf_size *= 2)
-		read_test(MASS_FILE_NAME, buf_size, READ_SIZE);
 #endif
 
-#ifdef LOAD_PFS
-	printf("Start reading file %s:\n", "pfs0:zero.bin");
+#ifdef LOAD_BDM
+	printf("Start reading file %s:\n", MASS_FILE_NAME);
 	for (buf_size = BLOCK_SIZE_MIN; buf_size <= BLOCK_SIZE_MAX; buf_size *= 2)
-		read_test("pfs0:zero.bin", buf_size, READ_SIZE);  // Place 'zero.bin' inside __system partition of internal HDD (use uLE)
+        read_test(MASS_FILE_NAME, buf_size, READ_SIZE);
+#endif
+#ifdef LOAD_BDM_CDVD
+	printf("Start reading file %s:\n", CDVD_FILE_NAME);
+	for (buf_size = BLOCK_SIZE_MIN; buf_size <= BLOCK_SIZE_MAX; buf_size *= 2)
+		read_test(CDVD_FILE_NAME, buf_size, READ_SIZE);
+	//test_cdvd();
+#endif
+#ifdef LOAD_PFS
+	printf("Start reading file %s:\n", PFS_FILE_NAME);
+	for (buf_size = BLOCK_SIZE_MIN; buf_size <= BLOCK_SIZE_MAX; buf_size *= 2)
+        read_test(PFS_FILE_NAME, buf_size, READ_SIZE);
+#endif
+#ifdef LOAD_HOST
+    // Below a block size of 2K the speed is terrible:
+    //  512 -> speed is   4KiB/s
+    // 1024 -> speed is   8KiB/s
+    // 2048 -> speed is 700KiB/s
+    // ... weird
+    buf_size = (BLOCK_SIZE_MIN > 2048) ? BLOCK_SIZE_MIN : 2048;
+
+	printf("Start reading file %s:\n", HOST_FILE_NAME);
+	for (; buf_size <= BLOCK_SIZE_MAX; buf_size *= 2)
+        read_test(HOST_FILE_NAME, buf_size, READ_SIZE);
 #endif
 
 	return 1;
