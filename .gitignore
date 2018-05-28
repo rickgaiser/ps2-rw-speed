@@ -1,3 +1,4 @@
 *.irx
 *.o
 *.elf
+*_irx.c

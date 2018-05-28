@@ -1,7 +1,13 @@
 #include <stdio.h>
+#include <string.h>
 #include <kernel.h>
+#include <sbv_patches.h>
 #include <debug.h>
 #include <sifrpc.h>
+#include <iopcontrol.h>
+#include <iopheap.h>
+#include <debug.h>
+#include <ps2ips.h>
 #include <fileXio_rpc.h>
 #include <loadfile.h>
 #include <time.h>
@@ -16,6 +22,75 @@
 #define PRINTF printf
 //#define PRINTF scr_printf
 
+#define IRX_DEFINE(mod) \
+extern unsigned char mod##_irx[]; \
+extern unsigned int size_##mod##_irx
+
+#define IRX_LOAD(mod) \
+    if (SifExecModuleBuffer(mod##_irx, size_##mod##_irx, 0, NULL, NULL) < 0) \
+        PRINTF("Could not load ##mod##\n")
+
+
+IRX_DEFINE(rw_speed);
+IRX_DEFINE(cdvdman);
+IRX_DEFINE(cdvdfsv);
+IRX_DEFINE(iomanX);
+IRX_DEFINE(fileXio);
+IRX_DEFINE(bdm);
+IRX_DEFINE(netman);
+IRX_DEFINE(smap);
+IRX_DEFINE(ps2ip_nm);
+IRX_DEFINE(ps2ips);
+IRX_DEFINE(udptty);
+IRX_DEFINE(usbd);
+IRX_DEFINE(usbmass_bd);
+IRX_DEFINE(sio2man);
+IRX_DEFINE(sio2sd_bd);
+IRX_DEFINE(iLinkman);
+IRX_DEFINE(IEEE1394_bd);
+IRX_DEFINE(bdmfs_vfat);
+IRX_DEFINE(bdmfs_ext2);
+IRX_DEFINE(ps2dev9);
+IRX_DEFINE(ps2atad);
+IRX_DEFINE(ps2hdd);
+IRX_DEFINE(ps2fs);
+
+
+static void ethPrintIPConfig(void)
+{
+	t_ip_info ip_info;
+	u8 ip_address[4], netmask[4], gateway[4];
+
+	//SMAP is registered as the "sm0" device to the TCP/IP stack.
+	if (ps2ip_getconfig("sm0", &ip_info) >= 0)
+	{
+		ip_address[0] = ip4_addr1((struct ip4_addr *)&ip_info.ipaddr);
+		ip_address[1] = ip4_addr2((struct ip4_addr *)&ip_info.ipaddr);
+		ip_address[2] = ip4_addr3((struct ip4_addr *)&ip_info.ipaddr);
+		ip_address[3] = ip4_addr4((struct ip4_addr *)&ip_info.ipaddr);
+
+		netmask[0] = ip4_addr1((struct ip4_addr *)&ip_info.netmask);
+		netmask[1] = ip4_addr2((struct ip4_addr *)&ip_info.netmask);
+		netmask[2] = ip4_addr3((struct ip4_addr *)&ip_info.netmask);
+		netmask[3] = ip4_addr4((struct ip4_addr *)&ip_info.netmask);
+
+		gateway[0] = ip4_addr1((struct ip4_addr *)&ip_info.gw);
+		gateway[1] = ip4_addr2((struct ip4_addr *)&ip_info.gw);
+		gateway[2] = ip4_addr3((struct ip4_addr *)&ip_info.gw);
+		gateway[3] = ip4_addr4((struct ip4_addr *)&ip_info.gw);
+
+		scr_printf(	"IP:\t%d.%d.%d.%d\n"
+                    "NM:\t%d.%d.%d.%d\n"
+                    "GW:\t%d.%d.%d.%d\n",
+					ip_address[0], ip_address[1], ip_address[2], ip_address[3],
+					netmask[0], netmask[1], netmask[2], netmask[3],
+					gateway[0], gateway[1], gateway[2], gateway[3]);
+	}
+	else
+	{
+		scr_printf("Unable to read IP address.\n");
+	}
+}
 
 //--------------------------------------------------------------
 void delay(int count)
@@ -63,7 +138,7 @@ void read_test(const char * filename, unsigned int buf_size, unsigned int max_si
     clk_end = clock();
 
 	msec = (int)((clk_end - clk_start) / CLOCKS_PER_MSEC);
-	PRINTF("Read %dKiB in %dms, buf_size=%d, speed=%dKB/s\n", fd_size/1024, msec, buf_size, fd_size / msec);
+	PRINTF("Read %dKiB in %dms, blocksize=%d, speed=%dKB/s\n", fd_size/1024, msec, buf_size, fd_size / msec);
 
 	free(buffer);
 
@@ -95,13 +170,10 @@ void test_cdvd()
 	//	PRINTF("ERROR: sceCdInit(SCECdEXIT)\n");
 }
 
-#define SIF_LOAD(mod) \
-    if (SifLoadModule("host:" mod, 0, NULL) < 0) \
-        PRINTF("Could not load 'host:" mod "'\n")
-
 //--------------------------------------------------------------
 int main()
 {
+    t_ip_info ipconfig;
 #ifdef TEST_ON_EE
     unsigned int buf_size;
 #endif
@@ -111,55 +183,88 @@ int main()
 
 	SifInitRpc(0);
 
+	//Reboot IOP
+	while(!SifIopReset("", 0)){};
+	while(!SifIopSync()){};
+
+	//Initialize SIF services
+	SifInitRpc(0);
+	SifLoadFileInit();
+	SifInitIopHeap();
+	sbv_patch_enable_lmb();
+
+	// Load TCP/IP stack modules
+    IRX_LOAD(ps2dev9);
+    IRX_LOAD(netman);
+    IRX_LOAD(bdm);
+    IRX_LOAD(smap);
+    IRX_LOAD(ps2ip_nm);
+    IRX_LOAD(ps2ips);
+
+    strncpy(ipconfig.netif_name, "sm0", 3);
+    IP4_ADDR((struct ip4_addr *)&ipconfig.ipaddr,  192, 168,   1,  10);
+    IP4_ADDR((struct ip4_addr *)&ipconfig.netmask, 255, 255, 255,   0);
+    IP4_ADDR((struct ip4_addr *)&ipconfig.gw,      192, 168,   1, 254);
+
+    ps2ip_init();
+    ps2ip_setconfig(&ipconfig);
+
+	init_scr();
+	scr_printf("Initialized:\n");
+	ethPrintIPConfig();
+
+	// Load UDPTTY so we can see debug output again
+    IRX_LOAD(udptty);
+
 	/*
 	 * Load IO modules
 	 */
-    SIF_LOAD("modules/iomanX.irx");
-    SIF_LOAD("modules/fileXio.irx");
+    IRX_LOAD(iomanX);
+    IRX_LOAD(fileXio);
 
 #ifdef LOAD_BDM
-    SIF_LOAD("modules/bdm.irx");
+    //IRX_LOAD(bdm);
 #endif
 
 #ifdef LOAD_BDM_CDVD
-    SIF_LOAD("cdvdman/cdvdman.irx");
-    SIF_LOAD("cdvdfsv/cdvdfsv.irx");
+    IRX_LOAD(cdvdman);
+    IRX_LOAD(cdvdfsv);
 #endif
 
 #ifdef LOAD_BD_USB
-    SIF_LOAD("modules/usbd.irx");
-    SIF_LOAD("modules/usbmass_bd.irx");
+    IRX_LOAD(usbd);
+    IRX_LOAD(usbmass_bd);
 #endif
 
 #ifdef LOAD_BD_MC2SD
-    //SIF_LOAD("modules/sio2man.irx");
-    SIF_LOAD("modules/mc2sd_bd.irx");
+    //IRX_LOAD(sio2man);
+    IRX_LOAD(sio2sd_bd);
 #endif
 
 #ifdef LOAD_BD_IEEE
-    SIF_LOAD("modules/iLinkman.irx");
-    SIF_LOAD("modules/IEEE1394_bd.irx");
+    IRX_LOAD(iLinkman);
+    IRX_LOAD(IEEE1394_bd);
 #endif
 
 #ifdef LOAD_FS_VFAT
-    SIF_LOAD("modules/bdmfs_vfat.irx");
+    IRX_LOAD(bdmfs_vfat);
 #endif
 
 #ifdef LOAD_FS_EXT2
-    SIF_LOAD("modules/bdmfs_ext2.irx");
+    IRX_LOAD(bdmfs_ext2);
 #endif
 
 	// Give low level drivers some time to init
-	delay(5);
+	delay(30);
 
 #ifdef LOAD_PFS
 	/*
 	 * Load HDD modules
 	 */
-    //SIF_LOAD("modules/ps2dev9.irx");
-    SIF_LOAD("modules/ps2atad.irx");
-    SIF_LOAD("modules/ps2hdd.irx");
-    SIF_LOAD("modules/ps2fs.irx");
+    //IRX_LOAD(ps2dev9);
+    IRX_LOAD(ps2atad);
+    IRX_LOAD(ps2hdd);
+    IRX_LOAD(ps2fs);
 
 	fileXioInit();
 	if (fileXioMount("pfs0:", "hdd0:__system", FIO_MT_RDWR) == -ENOENT)
@@ -209,11 +314,14 @@ int main()
 	/*
 	 * Start read/write speed test on the IOP
 	 */
-    SIF_LOAD("iop/rw_speed.irx");
+    IRX_LOAD(rw_speed);
 #endif
 
 	PRINTF("Done, exit in 5\n");
 	delay(5);
+
+	//Deinitialize SIF services
+	SifExitRpc();
 
 	return 0;
 }

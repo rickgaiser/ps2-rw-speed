@@ -16,9 +16,10 @@
 //#define LOAD_BDM_CDVD
 
 // Load one of these Block Disks
-#define LOAD_BD_USB
+//#define LOAD_BD_USB
 //#define LOAD_BD_MC2SD
 //#define LOAD_BD_IEEE
+#define LOAD_BD_SMAP
 
 // Load one or more File Systems
 #define LOAD_FS_VFAT
@@ -26,10 +27,10 @@
 
 // Other file systems
 //#define LOAD_PFS
-#define LOAD_HOST
+//#define LOAD_HOST
 
 // Where to run the tests
-#define TEST_ON_EE
+//#define TEST_ON_EE
 #define TEST_ON_IOP
 
 

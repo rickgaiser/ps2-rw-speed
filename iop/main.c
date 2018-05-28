@@ -54,7 +54,7 @@ void read_test(const char * filename, unsigned int buf_size, unsigned int max_si
         msec -= (start_usecs - end_usecs) / 1000;
     else
         msec += (end_usecs - start_usecs) / 1000;
-	printf("Read %dKiB in %dms, buf_size=%d, speed=%dKB/s\n", fd_size/1024, msec, buf_size, fd_size / msec);
+	printf("Read %dKiB in %dms, blocksize=%d, speed=%dKB/s\n", fd_size/1024, msec, buf_size, fd_size / msec);
 
 	FreeSysMemory(buffer);
 
@@ -111,7 +111,7 @@ int _start()
 	for (i = 0; i < MAX_BD; i++) {
 		if ((bd[i] != NULL) && (bd[i]->parNr == 0)) {
 			printf("Start reading '%s%dp%d' block device:\n", bd[i]->name, bd[i]->devNr, bd[i]->parNr);
-			for (sector_count = 1; sector_count <= (512*2); sector_count *= 2)
+			for (sector_count = (BLOCK_SIZE_MIN/512); sector_count <= (BLOCK_SIZE_MAX/512); sector_count *= 2)
 				read_test_bd(bd[i], sector_count, READ_SIZE);
 		}
 	}
