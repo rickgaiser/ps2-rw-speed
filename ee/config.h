@@ -22,7 +22,7 @@
 
 // Load one or more File Systems
 #define LOAD_FS_VFAT
-#define LOAD_FS_EXT2
+//#define LOAD_FS_EXT2
 
 // Other file systems
 //#define LOAD_PFS
