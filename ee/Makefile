@@ -11,6 +11,7 @@ EE_IRX_FILES=\
 	fileXio.irx \
 	bdm.irx \
 	netman.irx \
+	smbman.irx \
 	ps2ips.irx \
 	smap.irx \
 	udptty.irx \

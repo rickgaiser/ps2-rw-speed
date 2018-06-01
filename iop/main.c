@@ -128,6 +128,11 @@ int _start()
 		read_test(CDVD_FILE_NAME, buf_size, READ_SIZE);
 	//test_cdvd();
 #endif
+#ifdef LOAD_BD_SMB
+	printf("Start reading file %s:\n", SMB_FILE_NAME);
+	for (buf_size = BLOCK_SIZE_MIN; buf_size <= BLOCK_SIZE_MAX; buf_size *= 2)
+        read_test(SMB_FILE_NAME, buf_size, READ_SIZE);
+#endif
 #ifdef LOAD_PFS
 	printf("Start reading file %s:\n", PFS_FILE_NAME);
 	for (buf_size = BLOCK_SIZE_MIN; buf_size <= BLOCK_SIZE_MAX; buf_size *= 2)

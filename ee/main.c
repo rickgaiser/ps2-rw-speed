@@ -8,6 +8,7 @@
 #include <iopheap.h>
 #include <debug.h>
 #include <ps2ips.h>
+#include <ps2smb.h>
 #include <fileXio_rpc.h>
 #include <loadfile.h>
 #include <time.h>
@@ -38,6 +39,7 @@ IRX_DEFINE(iomanX);
 IRX_DEFINE(fileXio);
 IRX_DEFINE(bdm);
 IRX_DEFINE(netman);
+IRX_DEFINE(smbman);
 IRX_DEFINE(smap);
 IRX_DEFINE(ps2ip_nm);
 IRX_DEFINE(ps2ips);
@@ -178,8 +180,9 @@ int main()
     unsigned int buf_size;
 #endif
 
-    PRINTF("EE Read/Write speed test\n");
-    PRINTF("------------------------\n");
+	init_scr();
+
+    PRINTF("Reloading all IOP modules...\n");
 
 	SifInitRpc(0);
 
@@ -198,6 +201,7 @@ int main()
     IRX_LOAD(netman);
     IRX_LOAD(bdm);
     IRX_LOAD(smap);
+#if 1
     IRX_LOAD(ps2ip_nm);
     IRX_LOAD(ps2ips);
 
@@ -209,18 +213,57 @@ int main()
     ps2ip_init();
     ps2ip_setconfig(&ipconfig);
 
-	init_scr();
-	scr_printf("Initialized:\n");
-	ethPrintIPConfig();
-
 	// Load UDPTTY so we can see debug output again
     IRX_LOAD(udptty);
+
+    PRINTF("IOP ready!\n");
+	ethPrintIPConfig();
+#endif
+	delay(25);
 
 	/*
 	 * Load IO modules
 	 */
     IRX_LOAD(iomanX);
     IRX_LOAD(fileXio);
+
+#ifdef LOAD_BD_SMB
+    IRX_LOAD(smbman);
+    {
+        smbLogOn_in_t logon;
+        smbEcho_in_t echo;
+        smbOpenShare_in_t openshare;
+        int result;
+        const char * ethBase = "smb0:";
+
+        strncpy(logon.serverIP, "192.168.1.198", sizeof(logon.serverIP));
+        logon.serverPort = 445;
+        strncpy(logon.User, "guest", sizeof(logon.User));
+        logon.PasswordType = NO_PASSWORD;
+        openshare.PasswordType = NO_PASSWORD;
+
+        if ((result = fileXioDevctl(ethBase, SMB_DEVCTL_LOGON, (void *)&logon, sizeof(logon), NULL, 0)) >= 0) {
+            PRINTF("SMB login OK!\n");
+            // SMB server alive test
+            strcpy(echo.echo, "ALIVE ECHO TEST");
+            echo.len = strlen("ALIVE ECHO TEST");
+
+            if (fileXioDevctl(ethBase, SMB_DEVCTL_ECHO, (void *)&echo, sizeof(echo), NULL, 0) >= 0) {
+                PRINTF("SMB echo OK!\n");
+                // connect to the share
+                strcpy(openshare.ShareName, "PS2SMB");
+
+                if (fileXioDevctl(ethBase, SMB_DEVCTL_OPENSHARE, (void *)&openshare, sizeof(openshare), NULL, 0) >= 0) {
+                    PRINTF("SMB share connected!\n");
+                }
+            } else {
+                PRINTF("SMB echo failed\n");
+            }
+        } else {
+            PRINTF("SMB login failed\n");
+        }
+    }
+#endif
 
 #ifdef LOAD_BDM
     //IRX_LOAD(bdm);
@@ -255,7 +298,7 @@ int main()
 #endif
 
 	// Give low level drivers some time to init
-	delay(30);
+	delay(5);
 
 #ifdef LOAD_PFS
 	/*
@@ -275,6 +318,9 @@ int main()
 	/*
 	 * Start read/write speed test on the EE
 	 */
+    PRINTF("EE Read/Write speed test\n");
+    PRINTF("------------------------\n");
+
 #ifdef LOAD_BDM
     int fd = fileXioOpen(MASS_FILE_NAME, O_RDONLY);
     int LBA = fileXioIoctl(fd, USBMASS_IOCTL_GET_LBA, MASS_FILE_NAME);
@@ -290,6 +336,11 @@ int main()
 	for (buf_size = BLOCK_SIZE_MIN; buf_size <= BLOCK_SIZE_MAX; buf_size *= 2)
 		read_test(CDVD_FILE_NAME, buf_size, READ_SIZE);
 	//test_cdvd();
+#endif
+#ifdef LOAD_BD_SMB
+	printf("Start reading file %s:\n", SMB_FILE_NAME);
+	for (buf_size = BLOCK_SIZE_MIN; buf_size <= BLOCK_SIZE_MAX; buf_size *= 2)
+        read_test(SMB_FILE_NAME, buf_size, READ_SIZE);
 #endif
 #ifdef LOAD_PFS
 	printf("Start reading file %s:\n", PFS_FILE_NAME);
